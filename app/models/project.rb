@@ -206,7 +206,7 @@ class Project < ActiveRecord::Base
   end
 
   def path_to_repo
-    File.join(GIT_HOST["base_path"], "#{path}.git")
+    File.join(Gitlab.config.git_host["base_path"], "#{path}.git")
   end
 
   def update_repository
