@@ -198,6 +198,12 @@ class Project < ActiveRecord::Base
       unless cur_perm == "100775"
         File.chmod(0775, hook_file)
       end
+
+      dstdir = File.join(path_to_repo, 'hooks')
+      srcdir = File.join(Rails.root, 'lib', 'post-receive.secondary.d')
+      postdir = File.join(dstdir, 'post-receive.secondary.d')
+      %x{if test ! -d #{postdir}; then cp -r #{srcdir} #{dstdir}; chmod 0775 #{dstdir}/*; fi}
+
       return 0
     end  
 
