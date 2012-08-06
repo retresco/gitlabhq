@@ -181,10 +181,16 @@ class Project < ActiveRecord::Base
 
   def write_hook(name, content)
     hook_file = File.join(path_to_repo, 'hooks', name)
-    cur_content = File.read(hook_file)
+    file_exists = FileTest.exists?(hook_file)
+
+    if file_exists
+      cur_content = File.read(hook_file)
+    end
 
     unless cur_content == content 
-      FileUtils.copy(hook_file, hook_file + '.' + Time.now.to_i.to_s)
+      if file_exists
+        FileUtils.copy(hook_file, hook_file + '.' + Time.now.to_i.to_s)
+      end
       File.open(hook_file, 'w') do |f|
         f.write(content)
       end  
@@ -192,6 +198,12 @@ class Project < ActiveRecord::Base
       unless cur_perm == "100775"
         File.chmod(0775, hook_file)
       end
+
+      dstdir = File.join(path_to_repo, 'hooks')
+      srcdir = File.join(Rails.root, 'lib', 'post-receive.secondary.d')
+      postdir = File.join(dstdir, 'post-receive.secondary.d')
+      %x{if test ! -d #{postdir}; then cp -r #{srcdir} #{dstdir}; chmod 0775 #{dstdir}/*; fi}
+
       return 0
     end  
 
@@ -202,21 +214,21 @@ class Project < ActiveRecord::Base
   end
 
   def url_to_repo
-    Gitlabhq::GitHost.url_to_repo(path)
+    Gitlab::GitHost.url_to_repo(path)
   end
 
   def path_to_repo
-    File.join(GIT_HOST["base_path"], "#{path}.git")
+    File.join(Gitlab.config.git_host["base_path"], "#{path}.git")
   end
 
   def update_repository
-    Gitlabhq::GitHost.system.update_project(path, self)
+    Gitlab::GitHost.system.update_project(path, self)
 
     write_hooks if File.exists?(path_to_repo)
   end
 
   def destroy_repository
-    Gitlabhq::GitHost.system.destroy_project(self)
+    Gitlab::GitHost.system.destroy_project(self)
   end
 
   def repo_exists?
