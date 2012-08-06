@@ -181,10 +181,16 @@ class Project < ActiveRecord::Base
 
   def write_hook(name, content)
     hook_file = File.join(path_to_repo, 'hooks', name)
-    cur_content = File.read(hook_file)
+    file_exists = FileTest.exists?(hook_file)
+
+    if file_exists
+      cur_content = File.read(hook_file)
+    end
 
     unless cur_content == content 
-      FileUtils.copy(hook_file, hook_file + '.' + Time.now.to_i.to_s)
+      if file_exists
+        FileUtils.copy(hook_file, hook_file + '.' + Time.now.to_i.to_s)
+      end
       File.open(hook_file, 'w') do |f|
         f.write(content)
       end  
